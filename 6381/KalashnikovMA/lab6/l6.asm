@@ -79,22 +79,47 @@ RUN_CHILD PROC
 	mov dx,offset STRENDL
 	call PRINT
 		
-		mov dx,offset STD_CHILD_PATH
-		xor ch,ch
-		mov cl,es:[80h]
-		cmp cx,0
-		je RUN_CHILD_NO_TAIL
-		mov si,cx
-		push si 
-		RUN_CHILD_LOOP:
-			mov al,es:[81h+si]
-			mov [offset CHILD_PATH+si-1],al			
-			dec si
-		loop RUN_CHILD_LOOP
-		pop si
-		mov [CHILD_PATH+si-1],0
-		mov dx,offset CHILD_PATH
-		RUN_CHILD_NO_TAIL:
+		mov es, es:[2Ch]
+		mov si, 0
+
+		EOL1:
+		mov dl, es:[si]
+		cmp dl, 00h
+		je EOL2	
+		inc si
+		jmp EOL1
+
+		EOL2:
+		inc si
+		mov dl, es:[si]
+		cmp dl, 00h		
+		jne EOL1
+		
+		add si, 03h		
+		
+		push di
+		mov di, offset CHILD_PATH
+
+		path_:
+		mov dl, es:[si]
+		cmp dl, 00h	
+		je CHANGE_TAIL	
+		mov [di], dl	
+		inc di			
+		inc si			
+		jmp path_
+		
+		CHANGE_TAIL:
+		sub di, 05h	
+		mov [di], byte ptr '2'	
+		mov [di+2], byte ptr 'C'
+		mov [di+3], byte ptr 'O'
+		mov [di+4], byte ptr 'M'
+		mov [di+5], byte ptr 0h
+		
+		pop di
+		mov dx, offset CHILD_PATH
+		call PRINT
 		
 		push ds
 		pop es
@@ -224,7 +249,6 @@ DATA SEGMENT
 					dd 0
 
 	CHILD_PATH  	db 50h dup ('$')
-	STD_CHILD_PATH	db 'C:\L2.COM', 0
 
 	KEEP_SS 		dw 0
 	KEEP_SP 		dw 0
